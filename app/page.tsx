@@ -1,69 +1,428 @@
-import Image from "next/image";
+"use client";
+
+import {
+  Users,
+  CreditCard,
+  AlertCircle,
+  TrendingUp,
+  Plus,
+  ArrowUpRight,
+  LogOut,
+} from "lucide-react";
+
+const payments = [
+  {
+    student: "Μαρία Κωνσταντίνου",
+    amount: "80,00 €",
+    method: "Μετρητά",
+    date: "16/09/2026",
+  },
+  {
+    student: "Γιώργος Παπαδόπουλος",
+    amount: "100,00 €",
+    method: "POS",
+    date: "16/09/2026",
+  },
+  {
+    student: "Νίκος Δημητρίου",
+    amount: "70,00 €",
+    method: "IRIS",
+    date: "15/09/2026",
+  },
+  {
+    student: "Ελένη Γεωργίου",
+    amount: "90,00 €",
+    method: "Τράπεζα",
+    date: "15/09/2026",
+  },
+];
+
+const debts = [
+  {
+    student: "Γιάννης Παπαδόπουλος",
+    month: "Σεπτέμβριος",
+    amount: "80,00 €",
+  },
+  {
+    student: "Ελένη Κωνσταντίνου",
+    month: "Σεπτέμβριος",
+    amount: "50,00 €",
+  },
+  {
+    student: "Κώστας Νικολάου",
+    month: "Σεπτέμβριος",
+    amount: "100,00 €",
+  },
+];
 
 export default function Home() {
+  function handleLogout() {
+    document.cookie =
+      "studyCenterLoggedIn=; path=/; max-age=0; SameSite=Lax";
+
+    window.location.href = "/login";
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
+    <main className="min-h-screen bg-slate-100">
+      <div className="flex min-h-screen">
+
+        {/* SIDEBAR */}
+        <aside className="hidden h-screen w-64 flex-col bg-slate-950 text-white md:flex">
+
+          {/* LOGO */}
+          <div className="border-b border-slate-800 p-6">
+            <h1 className="text-xl font-bold">
+              Κέντρο Μελέτης
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Management System
+            </p>
+          </div>
+
+          {/* NAVIGATION */}
+          <nav className="flex-1 p-4">
+
             <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="/"
+              className="mb-2 flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-medium"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
+              <TrendingUp size={19} />
+              Dashboard
+            </a>
+
             <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="/students"
+              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              <Users size={19} />
+              Μαθητές
+            </a>
+
+            <a
+              href="/registrations"
+              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+            >
+              <Plus size={19} />
+              Εγγραφές
+            </a>
+
+            <a
+              href="/payments"
+              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+            >
+              <CreditCard size={19} />
+              Πληρωμές
+            </a>
+
+            <a
+              href="/debts"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+            >
+              <AlertCircle size={19} />
+              Οφειλές
+            </a>
+
+          </nav>
+
+          {/* BOTTOM SIDEBAR */}
+          <div className="border-t border-slate-800 p-4">
+
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
+            >
+              <LogOut size={19} />
+              <span>Έξοδος</span>
+            </button>
+
+            <p className="mt-3 px-4 text-xs text-slate-600">
+              Study Center Manager
+            </p>
+
+            <p className="mt-1 px-4 text-xs text-slate-700">
+              v1.0
+            </p>
+
+          </div>
+
+        </aside>
+
+        {/* MAIN */}
+        <section className="flex-1">
+
+          {/* HEADER */}
+          <header className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
+
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm text-slate-500">
+                  Τετάρτη, 16 Σεπτεμβρίου 2026
+                </p>
+
+                <h2 className="mt-1 text-2xl font-bold text-slate-900">
+                  Dashboard
+                </h2>
+              </div>
+
+              <button
+                className="flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                <Plus size={18} />
+                Νέα πληρωμή
+              </button>
+
+            </div>
+
+          </header>
+
+          {/* CONTENT */}
+          <div className="p-6 md:p-8">
+
+            {/* STATS */}
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+
+              {/* ACTIVE STUDENTS */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <div className="flex items-center justify-between">
+
+                  <div className="rounded-xl bg-slate-100 p-3">
+                    <Users
+                      size={21}
+                      className="text-slate-700"
+                    />
+                  </div>
+
+                  <span className="text-xs font-medium text-green-600">
+                    +8%
+                  </span>
+
+                </div>
+
+                <p className="mt-5 text-sm text-slate-500">
+                  Ενεργοί μαθητές
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  86
+                </p>
+
+              </div>
+
+              {/* PAYMENTS */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <div className="flex items-center justify-between">
+
+                  <div className="rounded-xl bg-slate-100 p-3">
+                    <CreditCard
+                      size={21}
+                      className="text-slate-700"
+                    />
+                  </div>
+
+                  <span className="text-xs font-medium text-green-600">
+                    Σεπτέμβριος
+                  </span>
+
+                </div>
+
+                <p className="mt-5 text-sm text-slate-500">
+                  Εισπράξεις
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  3.240 €
+                </p>
+
+              </div>
+
+              {/* DEBTS */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <div className="flex items-center justify-between">
+
+                  <div className="rounded-xl bg-red-50 p-3">
+                    <AlertCircle
+                      size={21}
+                      className="text-red-600"
+                    />
+                  </div>
+
+                  <span className="text-xs font-medium text-red-600">
+                    Εκκρεμούν
+                  </span>
+
+                </div>
+
+                <p className="mt-5 text-sm text-slate-500">
+                  Οφειλές
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  680 €
+                </p>
+
+              </div>
+
+              {/* TOTAL */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <div className="flex items-center justify-between">
+
+                  <div className="rounded-xl bg-slate-100 p-3">
+                    <TrendingUp
+                      size={21}
+                      className="text-slate-700"
+                    />
+                  </div>
+
+                  <ArrowUpRight
+                    size={18}
+                    className="text-green-600"
+                  />
+
+                </div>
+
+                <p className="mt-5 text-sm text-slate-500">
+                  Συνολικές χρεώσεις
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  3.920 €
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* TABLES */}
+            <div className="mt-8 grid gap-6 xl:grid-cols-2">
+
+              {/* PAYMENTS */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                <div className="flex items-center justify-between border-b border-slate-200 p-5">
+
+                  <div>
+                    <h3 className="font-bold text-slate-900">
+                      Πρόσφατες πληρωμές
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Οι τελευταίες καταχωρήσεις
+                    </p>
+                  </div>
+
+                  <a
+                    href="/payments"
+                    className="text-sm font-semibold text-slate-700 hover:text-slate-950"
+                  >
+                    Όλες
+                  </a>
+
+                </div>
+
+                <div className="divide-y divide-slate-100">
+
+                  {payments.map((payment) => (
+
+                    <div
+                      key={payment.student}
+                      className="flex items-center justify-between p-5"
+                    >
+
+                      <div>
+
+                        <p className="font-medium text-slate-900">
+                          {payment.student}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {payment.method} • {payment.date}
+                        </p>
+
+                      </div>
+
+                      <p className="font-bold text-green-600">
+                        +{payment.amount}
+                      </p>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              </div>
+
+              {/* DEBTS */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                <div className="flex items-center justify-between border-b border-slate-200 p-5">
+
+                  <div>
+                    <h3 className="font-bold text-slate-900">
+                      Εκκρεμείς οφειλές
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Μαθητές με υπόλοιπο
+                    </p>
+                  </div>
+
+                  <a
+                    href="/debts"
+                    className="text-sm font-semibold text-slate-700 hover:text-slate-950"
+                  >
+                    Όλες
+                  </a>
+
+                </div>
+
+                <div className="divide-y divide-slate-100">
+
+                  {debts.map((debt) => (
+
+                    <div
+                      key={debt.student}
+                      className="flex items-center justify-between p-5"
+                    >
+
+                      <div>
+
+                        <p className="font-medium text-slate-900">
+                          {debt.student}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {debt.month}
+                        </p>
+
+                      </div>
+
+                      <p className="font-bold text-red-600">
+                        {debt.amount}
+                      </p>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+    </main>
   );
 }

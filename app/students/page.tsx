@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 import {
   Search,
   Plus,
-  Users,
-  Phone,
   MoreVertical,
-  X,
+  Phone,
   Pencil,
   Trash2,
-  Eye,
+  X,
+  UserPlus,
   CreditCard,
 } from "lucide-react";
 
@@ -21,113 +22,70 @@ type Student = {
   parent: string;
   phone: string;
   email: string;
-  monthly: string;
-  registrationDate: string;
-  notes: string;
+  monthly_fee: number;
   status: string;
 };
 
-const initialStudents: Student[] = [
-  {
-    id: 1,
-    name: "Μαρία Κωνσταντίνου",
-    class: "Ε' Δημοτικού",
-    parent: "Γιώργος Κωνσταντίνου",
-    phone: "69XXXXXXXX",
-    email: "example@email.com",
-    monthly: "80",
-    registrationDate: "2026-09-01",
-    notes: "",
-    status: "Ενεργός",
-  },
-  {
-    id: 2,
-    name: "Γιώργος Παπαδόπουλος",
-    class: "ΣΤ' Δημοτικού",
-    parent: "Ελένη Παπαδοπούλου",
-    phone: "69XXXXXXXX",
-    email: "example@email.com",
-    monthly: "100",
-    registrationDate: "2026-09-01",
-    notes: "",
-    status: "Ενεργός",
-  },
-  {
-    id: 3,
-    name: "Νίκος Δημητρίου",
-    class: "Γ' Δημοτικού",
-    parent: "Κώστας Δημητρίου",
-    phone: "69XXXXXXXX",
-    email: "example@email.com",
-    monthly: "70",
-    registrationDate: "2026-09-02",
-    notes: "",
-    status: "Ενεργός",
-  },
-  {
-    id: 4,
-    name: "Ελένη Γεωργίου",
-    class: "Β' Δημοτικού",
-    parent: "Μαρία Γεωργίου",
-    phone: "69XXXXXXXX",
-    email: "example@email.com",
-    monthly: "90",
-    registrationDate: "2026-09-02",
-    notes: "",
-    status: "Ενεργός",
-  },
-];
+type StudentForm = {
+  name: string;
+  class: string;
+  parent: string;
+  phone: string;
+  email: string;
+  monthly_fee: string;
+  status: string;
+};
+
+const emptyForm: StudentForm = {
+  name: "",
+  class: "",
+  parent: "",
+  phone: "",
+  email: "",
+  monthly_fee: "",
+  status: "Ενεργός",
+};
 
 export default function StudentsPage() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
-
-  const [showDetails, setShowDetails] = useState(false);
-
-  const [selectedStudent, setSelectedStudent] =
-    useState<Student | null>(null);
-
-  const [editingStudent, setEditingStudent] =
-    useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
   const [openMenu, setOpenMenu] = useState<number | null>(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    class: "",
-    parent: "",
-    phone: "",
-    email: "",
-    monthly: "",
-    registrationDate: "",
-    notes: "",
-  });
+  const [form, setForm] = useState<StudentForm>(emptyForm);
 
-  const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.parent}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const [saving, setSaving] = useState(false);
 
-  function resetForm() {
-    setForm({
-      name: "",
-      class: "",
-      parent: "",
-      phone: "",
-      email: "",
-      monthly: "",
-      registrationDate: "",
-      notes: "",
-    });
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  async function loadStudents() {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("Σφάλμα φόρτωσης μαθητών:", error);
+      setStudents([]);
+    } else {
+      setStudents(data || []);
+    }
+
+    setLoading(false);
   }
 
   function openNewStudent() {
     setEditingStudent(null);
-    resetForm();
+    setForm(emptyForm);
     setShowForm(true);
     setOpenMenu(null);
   }
@@ -136,32 +94,106 @@ export default function StudentsPage() {
     setEditingStudent(student);
 
     setForm({
-      name: student.name,
-      class: student.class,
-      parent: student.parent,
-      phone: student.phone,
-      email: student.email,
-      monthly: student.monthly,
-      registrationDate: student.registrationDate,
-      notes: student.notes,
+      name: student.name || "",
+      class: student.class || "",
+      parent: student.parent || "",
+      phone: student.phone || "",
+      email: student.email || "",
+      monthly_fee:
+        student.monthly_fee !== null && student.monthly_fee !== undefined
+          ? String(student.monthly_fee)
+          : "",
+      status: student.status || "Ενεργός",
     });
 
     setShowForm(true);
     setOpenMenu(null);
   }
 
-  function openStudentDetails(student: Student) {
-    setSelectedStudent(student);
-    setShowDetails(true);
-    setOpenMenu(null);
+  function closeForm() {
+    setShowForm(false);
+    setEditingStudent(null);
+    setForm(emptyForm);
   }
 
-  function deleteStudent(student: Student) {
+  async function saveStudent(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!form.name.trim()) {
+      alert("Συμπλήρωσε το ονοματεπώνυμο του μαθητή.");
+      return;
+    }
+
+    setSaving(true);
+
+    const studentData = {
+      name: form.name.trim(),
+      class: form.class.trim(),
+      parent: form.parent.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      monthly_fee: Number(form.monthly_fee) || 0,
+      status: form.status,
+    };
+
+    if (editingStudent) {
+      const { data, error } = await supabase
+        .from("students")
+        .update(studentData)
+        .eq("id", editingStudent.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(error);
+        alert("Παρουσιάστηκε σφάλμα κατά την επεξεργασία.");
+        setSaving(false);
+        return;
+      }
+
+      setStudents((current) =>
+        current.map((student) =>
+          student.id === editingStudent.id ? data : student
+        )
+      );
+    } else {
+      const { data, error } = await supabase
+        .from("students")
+        .insert([studentData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error(error);
+        alert("Παρουσιάστηκε σφάλμα κατά την προσθήκη.");
+        setSaving(false);
+        return;
+      }
+
+      setStudents((current) => [...current, data]);
+    }
+
+    setSaving(false);
+    closeForm();
+  }
+
+  async function deleteStudent(student: Student) {
     const confirmed = window.confirm(
       `Θέλεις σίγουρα να διαγράψεις τον μαθητή "${student.name}";`
     );
 
     if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("students")
+      .delete()
+      .eq("id", student.id);
+
+    if (error) {
+      console.error(error);
+      alert("Παρουσιάστηκε σφάλμα κατά τη διαγραφή.");
+      return;
+    }
 
     setStudents((current) =>
       current.filter((item) => item.id !== student.id)
@@ -170,400 +202,360 @@ export default function StudentsPage() {
     setOpenMenu(null);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const filteredStudents = students.filter((student) => {
+    const text = search.toLowerCase();
 
-    if (
-      !form.name ||
-      !form.class ||
-      !form.parent ||
-      !form.monthly
-    ) {
-      alert("Συμπλήρωσε τα υποχρεωτικά πεδία.");
-      return;
-    }
-
-    if (editingStudent) {
-      setStudents((current) =>
-        current.map((student) =>
-          student.id === editingStudent.id
-            ? {
-                ...student,
-                ...form,
-              }
-            : student
-        )
-      );
-    } else {
-      const newStudent: Student = {
-        id: Date.now(),
-        ...form,
-        status: "Ενεργός",
-      };
-
-      setStudents((current) => [newStudent, ...current]);
-    }
-
-    setShowForm(false);
-    setEditingStudent(null);
-    resetForm();
-  }
+    return (
+      student.name?.toLowerCase().includes(text) ||
+      student.class?.toLowerCase().includes(text) ||
+      student.parent?.toLowerCase().includes(text) ||
+      student.phone?.toLowerCase().includes(text)
+    );
+  });
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      <div className="flex min-h-screen">
+    <main className="min-h-screen bg-slate-100 p-6">
 
-        {/* SIDEBAR */}
-        <aside className="hidden w-64 flex-col bg-slate-950 text-white md:flex">
+      {/* HEADER */}
 
-          <div className="border-b border-slate-800 p-6">
-            <h1 className="text-xl font-bold">
-              Κέντρο Μελέτης
-            </h1>
+      <div className="mb-6 flex items-center justify-between">
 
-            <p className="mt-1 text-sm text-slate-400">
-              Management System
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">
+            Μαθητές
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Διαχείριση μαθητών και στοιχείων επικοινωνίας
+          </p>
+        </div>
+
+        <button
+          onClick={openNewStudent}
+          className="flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+        >
+          <Plus size={18} />
+          Νέα εγγραφή
+        </button>
+
+      </div>
+
+      {/* MAIN CARD */}
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+        {/* CARD HEADER */}
+
+        <div className="flex items-center justify-between border-b border-slate-200 px-7 py-5">
+
+          <div className="flex items-center gap-4">
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
+              <UserPlus
+                size={23}
+                className="text-slate-700"
+              />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Λίστα μαθητών
+              </h2>
+
+              <p className="text-sm text-slate-500">
+                {students.length} μαθητές
+              </p>
+            </div>
+
+          </div>
+
+          {/* SEARCH */}
+
+          <div className="relative w-80">
+
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Αναζήτηση μαθητή..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+            />
+
+          </div>
+
+        </div>
+
+        {/* TABLE */}
+
+        {loading ? (
+
+          <div className="flex h-60 items-center justify-center">
+            <p className="text-sm text-slate-500">
+              Φόρτωση μαθητών...
             </p>
           </div>
 
-          <nav className="flex-1 p-4">
+        ) : filteredStudents.length === 0 ? (
 
-            <a
-              href="/"
-              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/10"
-            >
-              Dashboard
-            </a>
+          <div className="flex h-60 flex-col items-center justify-center">
 
-            <a
-              href="/students"
-              className="mb-2 flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-medium"
-            >
-              <Users size={19} />
-              Μαθητές
-            </a>
+            <UserPlus
+              size={38}
+              className="mb-3 text-slate-300"
+            />
 
-            <a
-              href="/registrations"
-              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/10"
-            >
-              Εγγραφές
-            </a>
+            <p className="font-semibold text-slate-700">
+              Δεν υπάρχουν μαθητές
+            </p>
 
-            <a
-              href="/payments"
-              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/10"
-            >
-              Πληρωμές
-            </a>
-
-            <a
-              href="/debts"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/10"
-            >
-              Οφειλές
-            </a>
-
-          </nav>
-
-        </aside>
-
-        {/* MAIN */}
-        <section className="flex-1">
-
-          {/* HEADER */}
-          <header className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
-
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-              <div>
-                <p className="text-sm text-slate-500">
-                  Διαχείριση μαθητών
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                  Μαθητές
-                </h2>
-              </div>
-
-              <button
-                onClick={openNewStudent}
-                className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                <Plus size={18} />
-                Νέος μαθητής
-              </button>
-
-            </div>
-
-          </header>
-
-          {/* CONTENT */}
-          <div className="p-6 md:p-8">
-
-            {/* SEARCH */}
-            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-
-              <div className="relative">
-
-                <Search
-                  size={19}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Αναζήτηση μαθητή ή κηδεμόνα..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-400"
-                />
-
-              </div>
-
-            </div>
-
-            {/* TABLE */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-              <div className="border-b border-slate-200 p-5">
-
-                <div className="flex items-center gap-3">
-
-                  <div className="rounded-xl bg-slate-100 p-3">
-                    <Users size={20} className="text-slate-700" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-slate-900">
-                      Λίστα μαθητών
-                    </h3>
-
-                    <p className="text-sm text-slate-500">
-                      {students.length} μαθητές
-                    </p>
-                  </div>
-
-                </div>
-
-              </div>
-
-              <div className="overflow-x-auto">
-
-                <table className="w-full min-w-[900px]">
-
-                  <thead className="bg-slate-50">
-
-                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-
-                      <th className="px-6 py-4">
-                        Μαθητής
-                      </th>
-
-                      <th className="px-6 py-4">
-                        Τάξη
-                      </th>
-
-                      <th className="px-6 py-4">
-                        Κηδεμόνας
-                      </th>
-
-                      <th className="px-6 py-4">
-                        Τηλέφωνο
-                      </th>
-
-                      <th className="px-6 py-4">
-                        Μηνιαία χρέωση
-                      </th>
-
-                      <th className="px-6 py-4">
-                        Κατάσταση
-                      </th>
-
-                      <th className="px-6 py-4">
-                      </th>
-
-                    </tr>
-
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-100">
-
-                    {filteredStudents.map((student) => (
-
-                      <tr
-                        key={student.id}
-                        className="transition hover:bg-slate-50"
-                      >
-
-                        <td className="px-6 py-5">
-                          <div className="font-semibold text-slate-900">
-                            {student.name}
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5 text-sm text-slate-600">
-                          {student.class}
-                        </td>
-
-                        <td className="px-6 py-5 text-sm text-slate-600">
-                          {student.parent}
-                        </td>
-
-                        <td className="px-6 py-5">
-
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Phone size={15} />
-                            {student.phone}
-                          </div>
-
-                        </td>
-
-                        <td className="px-6 py-5 font-semibold text-slate-900">
-                          {student.monthly} €
-                        </td>
-
-                        <td className="px-6 py-5">
-
-                          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                            {student.status}
-                          </span>
-
-                        </td>
-
-                        <td className="relative px-6 py-5">
-
-                          <button
-                            onClick={() =>
-                              setOpenMenu(
-                                openMenu === student.id
-                                  ? null
-                                  : student.id
-                              )
-                            }
-                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                          >
-                            <MoreVertical size={18} />
-                          </button>
-
-                          {/* ACTION MENU */}
-                          {openMenu === student.id && (
-
-                            <div className="absolute right-6 top-14 z-30 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-
-                              <button
-                                onClick={() =>
-                                  openStudentDetails(student)
-                                }
-                                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
-                              >
-                                <Eye size={17} />
-                                Προβολή στοιχείων
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  openEditStudent(student)
-                                }
-                                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
-                              >
-                                <Pencil size={17} />
-                                Επεξεργασία
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  setOpenMenu(null);
-                                  alert(
-                                    `Πληρωμές για ${student.name}`
-                                  );
-                                }}
-                                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
-                              >
-                                <CreditCard size={17} />
-                                Πληρωμές
-                              </button>
-
-                              <div className="border-t border-slate-100" />
-
-                              <button
-                                onClick={() =>
-                                  deleteStudent(student)
-                                }
-                                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 size={17} />
-                                Διαγραφή
-                              </button>
-
-                            </div>
-
-                          )}
-
-                        </td>
-
-                      </tr>
-
-                    ))}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
+            <p className="mt-1 text-sm text-slate-400">
+              Πρόσθεσε τον πρώτο μαθητή.
+            </p>
 
           </div>
 
-        </section>
-      </div>
+        ) : (
 
-      {/* ADD / EDIT MODAL */}
+          <div className="overflow-x-auto">
+
+            <table className="w-full min-w-[1050px]">
+
+              <thead>
+                <tr className="bg-slate-50 text-left">
+
+                  <th className="px-7 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Μαθητής
+                  </th>
+
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Τάξη
+                  </th>
+
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Κηδεμόνας
+                  </th>
+
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Τηλέφωνο
+                  </th>
+
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Μηνιαία χρέωση
+                  </th>
+
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Κατάσταση
+                  </th>
+
+                  <th className="w-16 px-5 py-4"></th>
+
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {filteredStudents.map((student) => (
+
+                  <tr
+                    key={student.id}
+                    className="border-t border-slate-100 transition hover:bg-slate-50"
+                  >
+
+                    <td className="px-7 py-5">
+
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {student.name}
+                        </p>
+
+                        {student.email && (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {student.email}
+                          </p>
+                        )}
+                      </div>
+
+                    </td>
+
+                    <td className="px-5 py-5 text-sm text-slate-600">
+                      {student.class || "-"}
+                    </td>
+
+                    <td className="px-5 py-5 text-sm text-slate-600">
+                      {student.parent || "-"}
+                    </td>
+
+                    <td className="px-5 py-5">
+
+                      {student.phone ? (
+
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+
+                          <Phone
+                            size={16}
+                            className="text-slate-400"
+                          />
+
+                          {student.phone}
+
+                        </div>
+
+                      ) : (
+                        <span className="text-sm text-slate-400">
+                          -
+                        </span>
+                      )}
+
+                    </td>
+
+                    <td className="px-5 py-5">
+
+                      <div className="flex items-center gap-2 font-bold text-slate-900">
+                        <CreditCard
+                          size={17}
+                          className="text-slate-400"
+                        />
+
+                        {Number(student.monthly_fee || 0).toLocaleString(
+                          "el-GR",
+                          {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          }
+                        )}{" "}
+                        €
+                      </div>
+
+                    </td>
+
+                    <td className="px-5 py-5">
+
+                      <span
+                        className={`inline-flex rounded-full px-4 py-1.5 text-xs font-semibold ${
+                          student.status === "Ενεργός"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {student.status || "Ενεργός"}
+                      </span>
+
+                    </td>
+
+                    <td className="relative px-5 py-5">
+
+                      <button
+                        onClick={() =>
+                          setOpenMenu(
+                            openMenu === student.id
+                              ? null
+                              : student.id
+                          )
+                        }
+                        className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <MoreVertical size={20} />
+                      </button>
+
+                      {openMenu === student.id && (
+
+                        <div className="absolute right-5 top-14 z-20 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+
+                          <button
+                            onClick={() =>
+                              openEditStudent(student)
+                            }
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            <Pencil size={16} />
+                            Επεξεργασία
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              deleteStudent(student)
+                            }
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                            Διαγραφή
+                          </button>
+
+                        </div>
+
+                      )}
+
+                    </td>
+
+                  </tr>
+
+                ))}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* MODAL */}
+
       {showForm && (
 
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
 
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
 
-            <div className="flex items-center justify-between border-b border-slate-200 p-6">
+            {/* MODAL HEADER */}
+
+            <div className="flex items-center justify-between border-b border-slate-100 px-7 py-5">
 
               <div>
 
-                <h3 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-slate-900">
                   {editingStudent
                     ? "Επεξεργασία μαθητή"
-                    : "Νέος μαθητής"}
-                </h3>
+                    : "Νέα εγγραφή μαθητή"}
+                </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  {editingStudent
-                    ? "Τροποποίησε τα στοιχεία του μαθητή"
-                    : "Συμπλήρωσε τα στοιχεία του μαθητή"}
+                  Συμπλήρωσε τα στοιχεία του μαθητή
                 </p>
 
               </div>
 
               <button
-                onClick={() => setShowForm(false)}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                onClick={closeForm}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
-                <X size={22} />
+                <X size={21} />
               </button>
 
             </div>
 
+            {/* FORM */}
+
             <form
-              onSubmit={handleSubmit}
-              className="space-y-5 p-6"
+              onSubmit={saveStudent}
+              className="p-7"
             >
 
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid grid-cols-2 gap-5">
 
-                <div className="md:col-span-2">
+                {/* NAME */}
+
+                <div className="col-span-2">
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Ονοματεπώνυμο *
+                    Ονοματεπώνυμο μαθητή
                   </label>
 
                   <input
@@ -575,18 +567,22 @@ export default function StudentsPage() {
                         name: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="π.χ. Μαρία Κωνσταντίνου"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
 
+                {/* CLASS */}
+
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Τάξη *
+                    Τάξη
                   </label>
 
-                  <select
+                  <input
+                    type="text"
                     value={form.class}
                     onChange={(e) =>
                       setForm({
@@ -594,55 +590,18 @@ export default function StudentsPage() {
                         class: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
-                  >
-                    <option value="">
-                      Επίλεξε τάξη
-                    </option>
-
-                    <option>Α' Δημοτικού</option>
-                    <option>Β' Δημοτικού</option>
-                    <option>Γ' Δημοτικού</option>
-                    <option>Δ' Δημοτικού</option>
-                    <option>Ε' Δημοτικού</option>
-                    <option>ΣΤ' Δημοτικού</option>
-
-                    <option>Α' Γυμνασίου</option>
-                    <option>Β' Γυμνασίου</option>
-                    <option>Γ' Γυμνασίου</option>
-
-                    <option>Α' Λυκείου</option>
-                    <option>Β' Λυκείου</option>
-                    <option>Γ' Λυκείου</option>
-                  </select>
-
-                </div>
-
-                <div>
-
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Μηνιαία χρέωση *
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.monthly}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        monthly: e.target.value,
-                      })
-                    }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="π.χ. Ε' Δημοτικού"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
 
+                {/* PARENT */}
+
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Κηδεμόνας *
+                    Κηδεμόνας
                   </label>
 
                   <input
@@ -654,10 +613,13 @@ export default function StudentsPage() {
                         parent: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="Ονοματεπώνυμο κηδεμόνα"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
+
+                {/* PHONE */}
 
                 <div>
 
@@ -666,7 +628,7 @@ export default function StudentsPage() {
                   </label>
 
                   <input
-                    type="tel"
+                    type="text"
                     value={form.phone}
                     onChange={(e) =>
                       setForm({
@@ -674,10 +636,13 @@ export default function StudentsPage() {
                         phone: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="69XXXXXXXX"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
+
+                {/* EMAIL */}
 
                 <div>
 
@@ -694,208 +659,95 @@ export default function StudentsPage() {
                         email: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="email@example.com"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
+
+                {/* MONTHLY FEE */}
 
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Ημερομηνία εγγραφής
+                    Μηνιαία χρέωση (€)
                   </label>
 
                   <input
-                    type="date"
-                    value={form.registrationDate}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.monthly_fee}
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        registrationDate: e.target.value,
+                        monthly_fee: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="80"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
                   />
 
                 </div>
 
-                <div className="md:col-span-2">
+                {/* STATUS */}
+
+                <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Παρατηρήσεις
+                    Κατάσταση
                   </label>
 
-                  <textarea
-                    value={form.notes}
+                  <select
+                    value={form.status}
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        notes: e.target.value,
+                        status: e.target.value,
                       })
                     }
-                    rows={4}
-                    className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
-                  />
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="Ενεργός">
+                      Ενεργός
+                    </option>
+
+                    <option value="Ανενεργός">
+                      Ανενεργός
+                    </option>
+                  </select>
 
                 </div>
 
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
+              {/* BUTTONS */}
+
+              <div className="mt-7 flex justify-end gap-3 border-t border-slate-100 pt-6">
 
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={closeForm}
+                  className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Ακύρωση
                 </button>
 
                 <button
                   type="submit"
-                  className="rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                  disabled={saving}
+                  className="rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {editingStudent
+                  {saving
+                    ? "Αποθήκευση..."
+                    : editingStudent
                     ? "Αποθήκευση αλλαγών"
-                    : "Αποθήκευση μαθητή"}
+                    : "Προσθήκη μαθητή"}
                 </button>
 
               </div>
 
             </form>
-
-          </div>
-
-        </div>
-
-      )}
-
-      {/* DETAILS MODAL */}
-      {showDetails && selectedStudent && (
-
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-
-            <div className="flex items-center justify-between border-b border-slate-200 p-6">
-
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  Στοιχεία μαθητή
-                </h3>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Πλήρης εικόνα μαθητή
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowDetails(false)}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
-              >
-                <X size={22} />
-              </button>
-
-            </div>
-
-            <div className="space-y-4 p-6">
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Ονοματεπώνυμο
-                </p>
-
-                <p className="mt-1 font-semibold text-slate-900">
-                  {selectedStudent.name}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Τάξη
-                  </p>
-
-                  <p className="mt-1 font-medium text-slate-900">
-                    {selectedStudent.class}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Μηνιαία χρέωση
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {selectedStudent.monthly} €
-                  </p>
-                </div>
-
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Κηδεμόνας
-                </p>
-
-                <p className="mt-1 font-medium text-slate-900">
-                  {selectedStudent.parent}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Τηλέφωνο
-                </p>
-
-                <p className="mt-1 font-medium text-slate-900">
-                  {selectedStudent.phone || "-"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Email
-                </p>
-
-                <p className="mt-1 font-medium text-slate-900">
-                  {selectedStudent.email || "-"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Ημερομηνία εγγραφής
-                </p>
-
-                <p className="mt-1 font-medium text-slate-900">
-                  {selectedStudent.registrationDate || "-"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500">
-                  Παρατηρήσεις
-                </p>
-
-                <p className="mt-1 text-sm text-slate-700">
-                  {selectedStudent.notes || "Δεν υπάρχουν παρατηρήσεις."}
-                </p>
-              </div>
-
-              <div className="flex justify-end border-t border-slate-200 pt-5">
-
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  Κλείσιμο
-                </button>
-
-              </div>
-
-            </div>
 
           </div>
 

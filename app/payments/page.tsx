@@ -234,6 +234,10 @@ export default function PaymentsPage() {
     window.print();
   }
 
+  const receiptSummary = selectedReceipt
+    ? getPaymentSummary(selectedReceipt)
+    : null;
+
   return (
     <>
       <main className="min-h-screen bg-slate-100 p-4 md:p-6 print:bg-white print:p-0">
@@ -573,80 +577,81 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                   </div>
+                  {receiptSummary && (
+                    <div className="space-y-4">
+                      <div className="rounded-2xl bg-slate-100 p-6">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          Πληρωμή
+                        </p>
 
-                 {(() => {
-  const summary = getPaymentSummary(selectedReceipt);
+                        <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">
+                          {Number(selectedReceipt.amount).toFixed(2)}€
+                        </p>
+                      </div>
 
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl bg-slate-100 p-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Πληρωμή
-        </p>
+                      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Οικονομική κατάσταση
+                        </p>
 
-        <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">
-          {Number(selectedReceipt.amount).toFixed(2)}€
-        </p>
-      </div>
+                        <div className="space-y-3">
+                          <div className="flex justify-between border-b border-slate-100 pb-3">
+                            <span className="text-slate-500">
+                              Μηνιαία χρέωση
+                            </span>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Οικονομική κατάσταση
-        </p>
+                            <span className="font-semibold text-slate-900">
+                              {receiptSummary.monthlyFee.toFixed(2)}€
+                            </span>
+                          </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between border-b border-slate-100 pb-3">
-            <span className="text-slate-500">
-              Μηνιαία χρέωση
-            </span>
+                          <div className="flex justify-between border-b border-slate-100 pb-3">
+                            <span className="text-slate-500">
+                              Σύνολο πληρωμών μήνα
+                            </span>
 
-            <span className="font-semibold text-slate-900">
-              {summary.monthlyFee.toFixed(2)}€
-            </span>
-          </div>
+                            <span className="font-semibold text-slate-900">
+                              {receiptSummary.totalPaid.toFixed(2)}€
+                            </span>
+                          </div>
 
-          <div className="flex justify-between border-b border-slate-100 pb-3">
-            <span className="text-slate-500">
-              Σύνολο πληρωμών μήνα
-            </span>
+                          <div className="flex justify-between border-b border-slate-100 pb-3">
+                            <span className="text-slate-500">
+                              Υπόλοιπο
+                            </span>
 
-            <span className="font-semibold text-slate-900">
-              {summary.totalPaid.toFixed(2)}€
-            </span>
-          </div>
+                            <span
+                              className={`text-lg font-bold ${
+                                receiptSummary.balance > 0
+                                  ? "text-red-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {receiptSummary.balance.toFixed(2)}€
+                            </span>
+                          </div>
 
-          <div className="flex justify-between border-b border-slate-100 pb-3">
-            <span className="text-slate-500">
-              Υπόλοιπο
-            </span>
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="text-slate-500">
+                              Κατάσταση
+                            </span>
 
-            <span className="text-lg font-bold text-red-600">
-              {summary.balance.toFixed(2)}€
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-slate-500">
-              Κατάσταση
-            </span>
-
-            <span
-              className={`rounded-full px-4 py-2 text-sm font-bold ${
-                summary.status === "Εξοφλημένο"
-                  ? "bg-green-100 text-green-700"
-                  : summary.status === "Μερική πληρωμή"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {summary.status}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})()}
+                            <span
+                              className={`rounded-full px-4 py-2 text-sm font-bold ${
+                                receiptSummary.status === "Εξοφλημένο"
+                                  ? "bg-green-100 text-green-700"
+                                  : receiptSummary.status === "Μερική πληρωμή"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {receiptSummary.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   </div>
                 </div>
 
@@ -661,7 +666,7 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              {/* Buttons */}
+                           {/* Buttons */}
               <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 p-5 sm:flex-row">
                 <button
                   onClick={printReceipt}
@@ -678,7 +683,7 @@ export default function PaymentsPage() {
                 </button>
               </div>
             </div>
-          </div>
+          
         )}
       </main>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   Users,
   CreditCard,
@@ -9,7 +10,6 @@ import {
   ArrowUpRight,
   LogOut,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 const payments = [
   {
@@ -57,8 +57,19 @@ const debts = [
 ];
 
 export default function Home() {
-  async function handleLogout() {
-    await supabase.auth.signOut();
+  useEffect(() => {
+    const loggedIn = localStorage.getItem("loggedIn");
+
+    if (loggedIn !== "true") {
+      window.location.href = "/login";
+    }
+  }, []);
+
+  function handleLogout() {
+    localStorage.removeItem("loggedIn");
+
+    document.cookie =
+      "loggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
     window.location.href = "/login";
   }
@@ -70,7 +81,6 @@ export default function Home() {
         {/* SIDEBAR */}
         <aside className="hidden h-screen w-64 flex-col bg-slate-950 text-white md:flex">
 
-          {/* LOGO */}
           <div className="border-b border-slate-800 p-6">
             <h1 className="text-xl font-bold">
               Κέντρο Μελέτης
@@ -81,7 +91,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* NAVIGATION */}
           <nav className="flex-1 p-4">
 
             <a
@@ -126,7 +135,6 @@ export default function Home() {
 
           </nav>
 
-          {/* BOTTOM SIDEBAR */}
           <div className="border-t border-slate-800 p-4">
 
             <button
@@ -134,7 +142,7 @@ export default function Home() {
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
             >
               <LogOut size={19} />
-              <span>Έξοδος</span>
+              Έξοδος
             </button>
 
             <p className="mt-3 px-4 text-xs text-slate-600">
@@ -159,7 +167,7 @@ export default function Home() {
 
               <div>
                 <p className="text-sm text-slate-500">
-                  Τετάρτη, 16 Σεπτεμβρίου 2026
+                  Κέντρο Σχολικής Μελέτης
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold text-slate-900">
@@ -185,16 +193,13 @@ export default function Home() {
             {/* STATS */}
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
 
-              {/* ACTIVE STUDENTS */}
+              {/* STUDENTS */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <Users
-                      size={21}
-                      className="text-slate-700"
-                    />
+                    <Users size={21} className="text-slate-700" />
                   </div>
 
                   <span className="text-xs font-medium text-green-600">
@@ -219,10 +224,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <CreditCard
-                      size={21}
-                      className="text-slate-700"
-                    />
+                    <CreditCard size={21} className="text-slate-700" />
                   </div>
 
                   <span className="text-xs font-medium text-green-600">
@@ -275,10 +277,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <TrendingUp
-                      size={21}
-                      className="text-slate-700"
-                    />
+                    <TrendingUp size={21} className="text-slate-700" />
                   </div>
 
                   <ArrowUpRight
@@ -303,7 +302,7 @@ export default function Home() {
             {/* TABLES */}
             <div className="mt-8 grid gap-6 xl:grid-cols-2">
 
-              {/* PAYMENTS */}
+              {/* RECENT PAYMENTS */}
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
                 <div className="flex items-center justify-between border-b border-slate-200 p-5">
@@ -330,14 +329,12 @@ export default function Home() {
                 <div className="divide-y divide-slate-100">
 
                   {payments.map((payment) => (
-
                     <div
                       key={payment.student}
                       className="flex items-center justify-between p-5"
                     >
 
                       <div>
-
                         <p className="font-medium text-slate-900">
                           {payment.student}
                         </p>
@@ -345,7 +342,6 @@ export default function Home() {
                         <p className="mt-1 text-xs text-slate-500">
                           {payment.method} • {payment.date}
                         </p>
-
                       </div>
 
                       <p className="font-bold text-green-600">
@@ -353,7 +349,6 @@ export default function Home() {
                       </p>
 
                     </div>
-
                   ))}
 
                 </div>
@@ -387,14 +382,12 @@ export default function Home() {
                 <div className="divide-y divide-slate-100">
 
                   {debts.map((debt) => (
-
                     <div
                       key={debt.student}
                       className="flex items-center justify-between p-5"
                     >
 
                       <div>
-
                         <p className="font-medium text-slate-900">
                           {debt.student}
                         </p>
@@ -402,7 +395,6 @@ export default function Home() {
                         <p className="mt-1 text-xs text-slate-500">
                           {debt.month}
                         </p>
-
                       </div>
 
                       <p className="font-bold text-red-600">
@@ -410,7 +402,6 @@ export default function Home() {
                       </p>
 
                     </div>
-
                   ))}
 
                 </div>

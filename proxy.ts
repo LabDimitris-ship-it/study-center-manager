@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -42,22 +42,16 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Το login είναι δημόσιο
   if (pathname === "/login") {
     if (user) {
-      return NextResponse.redirect(
-        new URL("/", request.url)
-      );
+      return NextResponse.redirect(new URL("/", request.url));
     }
 
     return response;
   }
 
-  // Όλες οι υπόλοιπες σελίδες απαιτούν login
   if (!user) {
-    return NextResponse.redirect(
-      new URL("/login", request.url)
-    );
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return response;

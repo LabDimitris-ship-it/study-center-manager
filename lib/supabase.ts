@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -11,12 +11,10 @@ if (!supabaseUrl) {
 }
 
 if (!supabaseKey) {
-  throw new Error(
-    "Missing Supabase API key"
-  );
+  throw new Error("Missing Supabase API key");
 }
 
-export const supabase = createClient(
+export const supabase = createBrowserClient(
   supabaseUrl,
   supabaseKey
 );

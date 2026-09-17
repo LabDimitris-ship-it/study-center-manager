@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   MessageCircle,
+  BarChart3,
 } from "lucide-react";
 
 const payments = [
@@ -265,6 +266,13 @@ export default function Home() {
                   <MessageCircle size={21} />
                   Επικοινωνία
                 </a>
+                <a
+  href="/finance"
+  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+>
+  <BarChart3 size={19} />
+  Οικονομικά
+</a>
 
               </nav>
 

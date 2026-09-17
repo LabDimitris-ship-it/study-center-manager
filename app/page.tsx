@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Users,
   CreditCard,
@@ -9,6 +9,8 @@ import {
   Plus,
   ArrowUpRight,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 const payments = [
@@ -57,6 +59,8 @@ const debts = [
 ];
 
 export default function Home() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   useEffect(() => {
     const loggedIn = localStorage.getItem("loggedIn");
 
@@ -74,12 +78,16 @@ export default function Home() {
     window.location.href = "/login";
   }
 
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="flex min-h-screen">
 
-        {/* SIDEBAR */}
-        <aside className="hidden h-screen w-64 flex-col bg-slate-950 text-white md:flex">
+        {/* DESKTOP SIDEBAR */}
+        <aside className="hidden h-screen w-64 flex-col bg-slate-950 text-white md:flex md:sticky md:top-0">
 
           <div className="border-b border-slate-800 p-6">
             <h1 className="text-xl font-bold">
@@ -157,30 +165,154 @@ export default function Home() {
 
         </aside>
 
-        {/* MAIN */}
-        <section className="flex-1">
+        {/* MOBILE MENU */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
 
-          {/* HEADER */}
-          <header className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
+            {/* BACKDROP */}
+            <button
+              aria-label="Κλείσιμο μενού"
+              onClick={closeMenu}
+              className="absolute inset-0 bg-black/50"
+            />
 
-            <div className="flex items-center justify-between">
+            {/* MENU */}
+            <aside className="relative z-10 flex h-full w-[82%] max-w-sm flex-col bg-slate-950 text-white shadow-2xl">
 
-              <div>
-                <p className="text-sm text-slate-500">
-                  Κέντρο Σχολικής Μελέτης
+              <div className="flex items-center justify-between border-b border-slate-800 p-5">
+
+                <div>
+                  <h1 className="text-lg font-bold">
+                    Κέντρο Μελέτης
+                  </h1>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    Management System
+                  </p>
+                </div>
+
+                <button
+                  onClick={closeMenu}
+                  className="rounded-xl p-2 text-slate-300 hover:bg-white/10"
+                  aria-label="Κλείσιμο"
+                >
+                  <X size={24} />
+                </button>
+
+              </div>
+
+              <nav className="flex-1 p-4">
+
+                <a
+                  href="/"
+                  onClick={closeMenu}
+                  className="mb-2 flex items-center gap-4 rounded-xl bg-white/10 px-4 py-4 text-base font-medium"
+                >
+                  <TrendingUp size={21} />
+                  Dashboard
+                </a>
+
+                <a
+                  href="/students"
+                  onClick={closeMenu}
+                  className="mb-2 flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <Users size={21} />
+                  Μαθητές
+                </a>
+
+                <a
+                  href="/registrations"
+                  onClick={closeMenu}
+                  className="mb-2 flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <Plus size={21} />
+                  Εγγραφές
+                </a>
+
+                <a
+                  href="/payments"
+                  onClick={closeMenu}
+                  className="mb-2 flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <CreditCard size={21} />
+                  Πληρωμές
+                </a>
+
+                <a
+                  href="/debts"
+                  onClick={closeMenu}
+                  className="flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <AlertCircle size={21} />
+                  Οφειλές
+                </a>
+
+              </nav>
+
+              <div className="border-t border-slate-800 p-4">
+
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <LogOut size={21} />
+                  Έξοδος
+                </button>
+
+                <p className="mt-3 px-4 text-xs text-slate-600">
+                  Study Center Manager
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                  Dashboard
-                </h2>
+              </div>
+
+            </aside>
+
+          </div>
+        )}
+
+        {/* MAIN */}
+        <section className="min-w-0 flex-1">
+
+          {/* HEADER */}
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 md:px-8">
+
+            <div className="flex items-center justify-between gap-3">
+
+              <div className="flex items-center gap-3">
+
+                {/* MOBILE MENU BUTTON */}
+                <button
+                  onClick={() => setMenuOpen(true)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white md:hidden"
+                  aria-label="Άνοιγμα μενού"
+                >
+                  <Menu size={22} />
+                </button>
+
+                <div>
+                  <p className="hidden text-sm text-slate-500 sm:block">
+                    Κέντρο Σχολικής Μελέτης
+                  </p>
+
+                  <h2 className="text-xl font-bold text-slate-900 sm:mt-1 sm:text-2xl">
+                    Dashboard
+                  </h2>
+                </div>
+
               </div>
 
               <a
                 href="/payments"
-                className="flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-3 py-3 text-xs font-semibold text-white transition hover:bg-slate-800 sm:px-4 sm:text-sm"
               >
                 <Plus size={18} />
-                Νέα πληρωμή
+                <span className="hidden sm:inline">
+                  Νέα πληρωμή
+                </span>
+                <span className="sm:hidden">
+                  Πληρωμή
+                </span>
               </a>
 
             </div>
@@ -188,10 +320,10 @@ export default function Home() {
           </header>
 
           {/* CONTENT */}
-          <div className="p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-8">
 
             {/* STATS */}
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
               {/* STUDENTS */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -300,7 +432,7 @@ export default function Home() {
             </div>
 
             {/* TABLES */}
-            <div className="mt-8 grid gap-6 xl:grid-cols-2">
+            <div className="mt-6 grid gap-6 xl:grid-cols-2">
 
               {/* RECENT PAYMENTS */}
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -331,11 +463,11 @@ export default function Home() {
                   {payments.map((payment) => (
                     <div
                       key={payment.student}
-                      className="flex items-center justify-between p-5"
+                      className="flex items-center justify-between gap-4 p-4 sm:p-5"
                     >
 
-                      <div>
-                        <p className="font-medium text-slate-900">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900">
                           {payment.student}
                         </p>
 
@@ -344,7 +476,7 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <p className="font-bold text-green-600">
+                      <p className="shrink-0 font-bold text-green-600">
                         +{payment.amount}
                       </p>
 
@@ -384,11 +516,11 @@ export default function Home() {
                   {debts.map((debt) => (
                     <div
                       key={debt.student}
-                      className="flex items-center justify-between p-5"
+                      className="flex items-center justify-between gap-4 p-4 sm:p-5"
                     >
 
-                      <div>
-                        <p className="font-medium text-slate-900">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900">
                           {debt.student}
                         </p>
 
@@ -397,7 +529,7 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <p className="font-bold text-red-600">
+                      <p className="shrink-0 font-bold text-red-600">
                         {debt.amount}
                       </p>
 

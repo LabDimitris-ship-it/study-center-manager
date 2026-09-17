@@ -145,10 +145,19 @@ export default function Home() {
 
             <a
               href="/communication"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
             >
               <MessageCircle size={19} />
               Επικοινωνία
+            </a>
+
+            {/* ΟΙΚΟΝΟΜΙΚΑ */}
+            <a
+              href="/finance"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+            >
+              <BarChart3 size={19} />
+              Οικονομικά
             </a>
 
           </nav>
@@ -261,18 +270,20 @@ export default function Home() {
                 <a
                   href="/communication"
                   onClick={closeMenu}
-                  className="flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                  className="mb-2 flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
                 >
                   <MessageCircle size={21} />
                   Επικοινωνία
                 </a>
+
                 <a
-  href="/finance"
-  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
->
-  <BarChart3 size={19} />
-  Οικονομικά
-</a>
+                  href="/finance"
+                  onClick={closeMenu}
+                  className="flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <BarChart3 size={21} />
+                  Οικονομικά
+                </a>
 
               </nav>
 

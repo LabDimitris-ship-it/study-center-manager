@@ -1,278 +1,424 @@
 "use client";
 
-import { AlertCircle, ArrowLeft, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
-const debts = [
-  {
-    id: 1,
-    student: "Γιάννης Παπαδόπουλος",
-    className: "Ε' Δημοτικού",
-    month: "Σεπτέμβριος",
-    charge: 100,
-    paid: 20,
-  },
-  {
-    id: 2,
-    student: "Ελένη Κωνσταντίνου",
-    className: "Δ' Δημοτικού",
-    month: "Σεπτέμβριος",
-    charge: 80,
-    paid: 30,
-  },
-  {
-    id: 3,
-    student: "Κώστας Νικολάου",
-    className: "ΣΤ' Δημοτικού",
-    month: "Σεπτέμβριος",
-    charge: 100,
-    paid: 0,
-  },
-  {
-    id: 4,
-    student: "Αναστασία Γεωργίου",
-    className: "Β' Δημοτικού",
-    month: "Σεπτέμβριος",
-    charge: 90,
-    paid: 40,
-  },
-];
+type Student = {
+  id: number;
+  name: string;
+  class: string | null;
+  guardian: string | null;
+  phone: string | null;
+  monthly_fee: number;
+  status: string | null;
+};
+
+type Payment = {
+  id: number;
+  student_id: number;
+  month: string;
+  amount: number;
+  payment_method: string | null;
+  payment_date: string;
+};
+
+type DebtExclusion = {
+  id: number;
+  student_id: number;
+  month: string;
+};
+
+type Debt = {
+  student: Student;
+  fee: number;
+  paid: number;
+  remaining: number;
+};
+
+function getCurrentMonth() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
+}
+
+function formatMonth(value: string) {
+  const [year, month] = value.split("-");
+
+  const months = [
+    "Ιανουάριος",
+    "Φεβρουάριος",
+    "Μάρτιος",
+    "Απρίλιος",
+    "Μάιος",
+    "Ιούνιος",
+    "Ιούλιος",
+    "Αύγουστος",
+    "Σεπτέμβριος",
+    "Οκτώβριος",
+    "Νοέμβριος",
+    "Δεκέμβριος",
+  ];
+
+  return `${months[Number(month) - 1]} ${year}`;
+}
 
 export default function DebtsPage() {
-  const [search, setSearch] = useState("");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [exclusions, setExclusions] = useState<DebtExclusion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [month, setMonth] = useState(getCurrentMonth());
 
-  const filteredDebts = debts.filter((debt) =>
-    debt.student
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  async function loadData() {
+    setLoading(true);
+
+    const [
+      { data: studentsData, error: studentsError },
+      { data: paymentsData, error: paymentsError },
+      { data: exclusionsData, error: exclusionsError },
+    ] = await Promise.all([
+      supabase
+        .from("students")
+        .select("*")
+        .order("name"),
+
+      supabase
+        .from("payments")
+        .select("*")
+        .order("payment_date", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("debt_exclusions")
+        .select("*"),
+    ]);
+
+    if (studentsError) {
+      console.error(studentsError);
+      alert("Δεν ήταν δυνατή η φόρτωση των μαθητών.");
+    }
+
+    if (paymentsError) {
+      console.error(paymentsError);
+      alert("Δεν ήταν δυνατή η φόρτωση των πληρωμών.");
+    }
+
+    if (exclusionsError) {
+      console.error(exclusionsError);
+      alert("Δεν ήταν δυνατή η φόρτωση των διαγραμμένων οφειλών.");
+    }
+
+    setStudents(studentsData || []);
+    setPayments(paymentsData || []);
+    setExclusions(exclusionsData || []);
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const debts = useMemo<Debt[]>(() => {
+    return students
+      .filter((student) => {
+        if (
+          student.status &&
+          student.status.toLowerCase() === "ανενεργός"
+        ) {
+          return false;
+        }
+
+        return Number(student.monthly_fee) > 0;
+      })
+      .map((student) => {
+        const studentPayments = payments.filter(
+          (payment) =>
+            payment.student_id === student.id &&
+            payment.month === month
+        );
+
+        const paid = studentPayments.reduce(
+          (sum, payment) => sum + Number(payment.amount || 0),
+          0
+        );
+
+        const fee = Number(student.monthly_fee || 0);
+
+        const remaining = Math.max(fee - paid, 0);
+
+        return {
+          student,
+          fee,
+          paid,
+          remaining,
+        };
+      })
+      .filter((debt) => {
+        if (debt.remaining <= 0) {
+          return false;
+        }
+
+        const excluded = exclusions.some(
+          (exclusion) =>
+            exclusion.student_id === debt.student.id &&
+            exclusion.month === month
+        );
+
+        return !excluded;
+      });
+  }, [students, payments, exclusions, month]);
 
   const totalDebt = debts.reduce(
-    (sum, debt) => sum + (debt.charge - debt.paid),
+    (sum, debt) => sum + debt.remaining,
     0
   );
 
+  const totalPaid = debts.reduce(
+    (sum, debt) => sum + debt.paid,
+    0
+  );
+
+  async function deleteDebt(studentId: number) {
+    const student = students.find(
+      (item) => item.id === studentId
+    );
+
+    if (!student) return;
+
+    const confirmed = window.confirm(
+      `Θέλεις να διαγράψεις την οφειλή του ${student.name} για ${formatMonth(
+        month
+      )};\n\nΗ πληρωμή και το παιδί δεν θα διαγραφούν.`
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("debt_exclusions")
+      .insert({
+        student_id: studentId,
+        month,
+      });
+
+    if (error) {
+      console.error(error);
+
+      if (error.code === "23505") {
+        alert("Η οφειλή έχει ήδη διαγραφεί.");
+      } else {
+        alert("Η οφειλή δεν διαγράφηκε.");
+      }
+
+      return;
+    }
+
+    await loadData();
+  }
+
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-gray-100 p-6">
+      <div className="mx-auto max-w-6xl">
 
-      <header className="border-b border-slate-200 bg-white">
+        {/* HEADER */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Οφειλές
+          </h1>
 
-        <div className="flex items-center justify-between px-6 py-5 md:px-8">
-
-          <div className="flex items-center gap-4">
-
-            <a
-              href="/"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
-            >
-              <ArrowLeft size={19} />
-            </a>
-
-            <div>
-
-              <p className="text-sm text-slate-500">
-                Κέντρο Μελέτης
-              </p>
-
-              <h1 className="text-2xl font-bold text-slate-900">
-                Οφειλές
-              </h1>
-
-            </div>
-
-          </div>
-
+          <p className="mt-2 text-gray-600">
+            Αυτόματος υπολογισμός οφειλών ανά μήνα
+          </p>
         </div>
 
-      </header>
+        {/* MONTH */}
+        <div className="mb-6 rounded-2xl bg-white p-6 shadow">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 
-      <div className="p-6 md:p-8">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Επιλογή μήνα
+              </label>
 
-        <div className="mb-6 grid gap-5 md:grid-cols-3">
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-            <div className="flex items-center gap-3">
-
-              <div className="rounded-xl bg-red-50 p-3">
-                <AlertCircle
-                  size={22}
-                  className="text-red-600"
-                />
-              </div>
-
-              <div>
-
-                <p className="text-sm text-slate-500">
-                  Μαθητές με οφειλή
-                </p>
-
-                <p className="text-2xl font-bold text-slate-900">
-                  {debts.length}
-                </p>
-
-              </div>
-
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="rounded-lg border p-3"
+              />
             </div>
 
+            <div className="rounded-xl bg-red-50 px-6 py-4">
+              <p className="text-sm text-gray-600">
+                Συνολικές οφειλές
+              </p>
+
+              <p className="text-2xl font-bold text-red-700">
+                {totalDebt.toFixed(2)}€
+              </p>
+            </div>
           </div>
+        </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        {/* SUMMARY */}
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
 
-            <p className="text-sm text-slate-500">
-              Συνολικές οφειλές
+          <div className="rounded-2xl bg-white p-5 shadow">
+            <p className="text-sm text-gray-500">
+              Οφειλέτες
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-red-600">
-              {totalDebt.toFixed(2)} €
+            <p className="mt-1 text-2xl font-bold">
+              {debts.length}
             </p>
-
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl bg-white p-5 shadow">
+            <p className="text-sm text-gray-500">
+              Πληρωμές στον μήνα
+            </p>
 
-            <p className="text-sm text-slate-500">
+            <p className="mt-1 text-2xl font-bold">
+              {totalPaid.toFixed(2)}€
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-5 shadow">
+            <p className="text-sm text-gray-500">
               Μήνας
             </p>
 
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              Σεπτέμβριος
+            <p className="mt-1 text-xl font-bold">
+              {formatMonth(month)}
             </p>
-
           </div>
 
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* DEBTS */}
+        <div className="rounded-2xl bg-white p-6 shadow">
 
-          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 md:flex-row md:items-center">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold">
+              Οφειλές — {formatMonth(month)}
+            </h2>
 
-            <div>
-
-              <h2 className="font-bold text-slate-900">
-                Εκκρεμείς οφειλές
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Μαθητές που έχουν υπόλοιπο
-              </p>
-
-            </div>
-
-            <div className="relative w-full md:w-80">
-
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                type="text"
-                placeholder="Αναζήτηση μαθητή..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:bg-white"
-              />
-
-            </div>
-
+            <p className="text-sm text-gray-500">
+              Οι οφειλές υπολογίζονται αυτόματα από τις πληρωμές.
+            </p>
           </div>
 
-          <div className="overflow-x-auto">
+          {loading ? (
+            <div className="py-10 text-center text-gray-500">
+              Φόρτωση...
+            </div>
+          ) : debts.length === 0 ? (
+            <div className="rounded-xl bg-green-50 p-10 text-center">
+              <p className="text-xl font-semibold text-green-700">
+                Δεν υπάρχουν οφειλές 🎉
+              </p>
 
-            <table className="w-full min-w-[850px]">
+              <p className="mt-2 text-green-600">
+                Όλοι οι μαθητές είναι τακτοποιημένοι για τον συγκεκριμένο μήνα.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
 
-              <thead>
+              <table className="w-full text-left">
 
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <thead>
+                  <tr className="border-b text-sm text-gray-500">
+                    <th className="p-3">
+                      Μαθητής
+                    </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Μαθητής
-                  </th>
+                    <th className="p-3">
+                      Τάξη
+                    </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Τάξη
-                  </th>
+                    <th className="p-3">
+                      Μηνιαία χρέωση
+                    </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Μήνας
-                  </th>
+                    <th className="p-3">
+                      Πληρωμή
+                    </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Χρέωση
-                  </th>
+                    <th className="p-3">
+                      Οφειλή
+                    </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Πληρωμένα
-                  </th>
+                    <th className="p-3">
+                      Ενέργεια
+                    </th>
+                  </tr>
+                </thead>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Υπόλοιπο
-                  </th>
+                <tbody>
 
-                </tr>
-
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-
-                {filteredDebts.map((debt) => {
-
-                  const remaining =
-                    debt.charge - debt.paid;
-
-                  return (
-
+                  {debts.map((debt) => (
                     <tr
-                      key={debt.id}
-                      className="hover:bg-slate-50"
+                      key={debt.student.id}
+                      className="border-b last:border-0"
                     >
 
-                      <td className="px-6 py-5 font-semibold text-slate-900">
-                        {debt.student}
+                      <td className="p-3">
+                        <div className="font-semibold">
+                          {debt.student.name}
+                        </div>
+
+                        {debt.student.guardian && (
+                          <div className="text-xs text-gray-500">
+                            {debt.student.guardian}
+                          </div>
+                        )}
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-slate-600">
-                        {debt.className}
+                      <td className="p-3">
+                        {debt.student.class || "-"}
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-slate-600">
-                        {debt.month}
+                      <td className="p-3">
+                        {debt.fee.toFixed(2)}€
                       </td>
 
-                      <td className="px-6 py-5 font-semibold text-slate-900">
-                        {debt.charge.toFixed(2)} €
+                      <td className="p-3 text-green-700">
+                        {debt.paid.toFixed(2)}€
                       </td>
 
-                      <td className="px-6 py-5 font-semibold text-green-600">
-                        {debt.paid.toFixed(2)} €
-                      </td>
-
-                      <td className="px-6 py-5">
-
-                        <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
-                          {remaining.toFixed(2)} €
+                      <td className="p-3">
+                        <span className="rounded-lg bg-red-100 px-3 py-2 font-bold text-red-700">
+                          {debt.remaining.toFixed(2)}€
                         </span>
+                      </td>
 
+                      <td className="p-3">
+                        <button
+                          onClick={() =>
+                            deleteDebt(debt.student.id)
+                          }
+                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        >
+                          Διαγραφή
+                        </button>
                       </td>
 
                     </tr>
+                  ))}
 
-                  );
-                })}
+                </tbody>
 
-              </tbody>
-
-            </table>
-
-          </div>
+              </table>
+            </div>
+          )}
 
         </div>
 
       </div>
-
     </main>
   );
 }

@@ -162,12 +162,14 @@ export default function StudentsPage() {
         .select()
         .single();
 
-      if (error) {
-        console.error(error);
-        alert("Παρουσιάστηκε σφάλμα κατά την προσθήκη.");
-        setSaving(false);
-        return;
-      }
+    if (error) {
+  console.error("SUPABASE ERROR:", error);
+  alert(
+    `Σφάλμα Supabase:\n${error.message}\n\nDetails: ${error.details || "-"}`
+  );
+  setSaving(false);
+  return;
+}
 
       setStudents((current) => [...current, data]);
     }

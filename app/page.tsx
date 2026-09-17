@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  MessageCircle,
 } from "lucide-react";
 
 const payments = [
@@ -135,10 +136,18 @@ export default function Home() {
 
             <a
               href="/debts"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+              className="mb-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
             >
               <AlertCircle size={19} />
               Οφειλές
+            </a>
+
+            <a
+              href="/communication"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10"
+            >
+              <MessageCircle size={19} />
+              Επικοινωνία
             </a>
 
           </nav>
@@ -242,10 +251,19 @@ export default function Home() {
                 <a
                   href="/debts"
                   onClick={closeMenu}
-                  className="flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                  className="mb-2 flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
                 >
                   <AlertCircle size={21} />
                   Οφειλές
+                </a>
+
+                <a
+                  href="/communication"
+                  onClick={closeMenu}
+                  className="flex items-center gap-4 rounded-xl px-4 py-4 text-base text-slate-300 transition hover:bg-white/10"
+                >
+                  <MessageCircle size={21} />
+                  Επικοινωνία
                 </a>
 
               </nav>
@@ -307,9 +325,11 @@ export default function Home() {
                 className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-3 py-3 text-xs font-semibold text-white transition hover:bg-slate-800 sm:px-4 sm:text-sm"
               >
                 <Plus size={18} />
+
                 <span className="hidden sm:inline">
                   Νέα πληρωμή
                 </span>
+
                 <span className="sm:hidden">
                   Πληρωμή
                 </span>
@@ -331,7 +351,10 @@ export default function Home() {
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <Users size={21} className="text-slate-700" />
+                    <Users
+                      size={21}
+                      className="text-slate-700"
+                    />
                   </div>
 
                   <span className="text-xs font-medium text-green-600">
@@ -356,7 +379,10 @@ export default function Home() {
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <CreditCard size={21} className="text-slate-700" />
+                    <CreditCard
+                      size={21}
+                      className="text-slate-700"
+                    />
                   </div>
 
                   <span className="text-xs font-medium text-green-600">
@@ -409,7 +435,10 @@ export default function Home() {
                 <div className="flex items-center justify-between">
 
                   <div className="rounded-xl bg-slate-100 p-3">
-                    <TrendingUp size={21} className="text-slate-700" />
+                    <TrendingUp
+                      size={21}
+                      className="text-slate-700"
+                    />
                   </div>
 
                   <ArrowUpRight
@@ -467,6 +496,7 @@ export default function Home() {
                     >
 
                       <div className="min-w-0">
+
                         <p className="truncate font-medium text-slate-900">
                           {payment.student}
                         </p>
@@ -474,6 +504,7 @@ export default function Home() {
                         <p className="mt-1 text-xs text-slate-500">
                           {payment.method} • {payment.date}
                         </p>
+
                       </div>
 
                       <p className="shrink-0 font-bold text-green-600">
@@ -520,6 +551,7 @@ export default function Home() {
                     >
 
                       <div className="min-w-0">
+
                         <p className="truncate font-medium text-slate-900">
                           {debt.student}
                         </p>
@@ -527,6 +559,7 @@ export default function Home() {
                         <p className="mt-1 text-xs text-slate-500">
                           {debt.month}
                         </p>
+
                       </div>
 
                       <p className="shrink-0 font-bold text-red-600">

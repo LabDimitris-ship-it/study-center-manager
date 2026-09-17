@@ -3,29 +3,36 @@
 import { useState } from "react";
 import { Lock, User, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
     setError("");
+    setLoading(true);
 
-    if (username === "admin" && password === "1234") {
-      document.cookie =
-        "studyCenterLoggedIn=true; path=/; max-age=86400; SameSite=Lax";
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      router.push("/");
-      router.refresh();
-    } else {
-      setError("Λάθος όνομα χρήστη ή κωδικός.");
+    if (error) {
+      setError("Λάθος email ή κωδικός.");
+      setLoading(false);
+      return;
     }
+
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -74,7 +81,7 @@ export default function LoginPage() {
             <div>
 
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Όνομα χρήστη
+                Email
               </label>
 
               <div className="relative">
@@ -85,12 +92,11 @@ export default function LoginPage() {
                 />
 
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) =>
-                    setUsername(e.target.value)
-                  }
-                  placeholder="admin"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Το email σου"
+                  required
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-500 focus:bg-white"
                 />
 
@@ -112,24 +118,17 @@ export default function LoginPage() {
                 />
 
                 <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="1234"
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Κωδικός"
+                  required
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-12 text-sm outline-none focus:border-slate-500 focus:bg-white"
                 />
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowPassword(!showPassword)
-                  }
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
                 >
                   {showPassword ? (
@@ -151,9 +150,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-slate-950 py-3.5 text-sm font-semibold text-white hover:bg-slate-800"
+              disabled={loading}
+              className="w-full rounded-xl bg-slate-950 py-3.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Είσοδος
+              {loading ? "Σύνδεση..." : "Είσοδος"}
             </button>
 
           </form>

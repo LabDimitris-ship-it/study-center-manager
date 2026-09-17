@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   LogOut,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const payments = [
   {
@@ -56,9 +57,8 @@ const debts = [
 ];
 
 export default function Home() {
-  function handleLogout() {
-    document.cookie =
-      "studyCenterLoggedIn=; path=/; max-age=0; SameSite=Lax";
+  async function handleLogout() {
+    await supabase.auth.signOut();
 
     window.location.href = "/login";
   }
@@ -167,12 +167,13 @@ export default function Home() {
                 </h2>
               </div>
 
-              <button
+              <a
+                href="/payments"
                 className="flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 <Plus size={18} />
                 Νέα πληρωμή
-              </button>
+              </a>
 
             </div>
 

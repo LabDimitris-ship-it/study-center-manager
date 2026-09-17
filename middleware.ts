@@ -1,31 +1,66 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { pathname } = request.nextUrl;
 
-  const isLoggedIn =
-    request.cookies.get("studyCenterLoggedIn")?.value === "true";
-
-  // Η σελίδα login είναι δημόσια
+  // Το login είναι δημόσιο
   if (pathname === "/login") {
-    if (isLoggedIn) {
+    if (user) {
       return NextResponse.redirect(
         new URL("/", request.url)
       );
     }
 
-    return NextResponse.next();
+    return response;
   }
 
-  // Αν δεν είναι συνδεδεμένος → Login
-  if (!isLoggedIn) {
+  // Όλες οι υπόλοιπες σελίδες απαιτούν login
+  if (!user) {
     return NextResponse.redirect(
       new URL("/login", request.url)
     );
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

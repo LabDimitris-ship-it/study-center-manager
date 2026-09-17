@@ -127,14 +127,13 @@ export default function StudentsPage() {
     setSaving(true);
 
     const studentData = {
-      name: form.name.trim(),
-      class: form.class.trim(),
-      parent: form.parent.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      monthly_fee: Number(form.monthly_fee) || 0,
-      status: form.status,
-    };
+  name: form.name.trim(),
+  class: form.class.trim(),
+  guardian: form.parent.trim(),
+  phone: form.phone.trim(),
+  monthly_fee: Number(form.monthly_fee) || 0,
+  status: form.status,
+};
 
     if (editingStudent) {
       const { data, error } = await supabase
